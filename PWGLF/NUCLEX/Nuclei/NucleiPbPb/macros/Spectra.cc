@@ -175,8 +175,8 @@ void Spectra() {
         double n_vtx = fNormMultClass->GetBinContent(4);
         double n_rec = fNormMultClass->GetBinContent(3);
         double n_sel = fNormMultClass->GetBinContent(2); // Number of selected events
-        double n_norm = n_sel * n_vtx / n_rec;
-        spectraTOF->Scale(1. / n_norm,"width");
+        double n_norm = n_vtx;//n_sel * n_vtx / n_rec;
+        spectraTOF->Scale(1. / n_norm,"width"); //0.7448
         spectraTPC->Scale(1. / n_norm,"width");
         spectraTOF->GetXaxis()->SetRange(1,15);
 

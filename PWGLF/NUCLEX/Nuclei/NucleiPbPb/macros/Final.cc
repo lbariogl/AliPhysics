@@ -61,10 +61,12 @@ void Final() {
   //histograms fot TOF analysis
   TH1F* stat_tof[2][n_centralities];
   TH1F* syst_tof[2][n_centralities];
+  TH1F* syst_tof_uncorr[2][n_centralities];
   TH1F* vec_syst_tof[2][n_centralities][5];
   //histograms for TPC analysis
   TH1F* stat_tpc[2][n_centralities];
   TH1F* syst_tpc[2][n_centralities];
+  TH1F* syst_tpc_uncorr[2][n_centralities];
   TH1F* vec_syst_tpc[2][n_centralities][5];
   //inclusive histogram with both tpc and TOF
   TH1F* stat_all[2][n_centralities];
@@ -126,21 +128,29 @@ void Final() {
       TH1F* spectra_tpc_tmp  = (TH1F*)spectra_file.Get(tpc_basepath.data());
       Requires(spectra_tpc_tmp,tpc_basepath.data());
       stat_tpc[iS][iC] = (TH1F*)spectra_tpc_tmp->Rebin(n_pt_bins,Form("stat_tpc_%d_%d",iS,iC),pt_bin_limits);
-      syst_tof[iS][iC]  = (TH1F*)totsyst->Clone(("syst_tof" + to_string(iC)).data());
+      syst_tof[iS][iC] = (TH1F*)totsyst->Clone(("syst_tof" + to_string(iC)).data());
       syst_tof[iS][iC]->Reset();
-      syst_tpc[iS][iC]  = (TH1F*)totsyst->Clone(("syst_tpc" + to_string(iC)).data());
+      syst_tpc[iS][iC] = (TH1F*)totsyst->Clone(("syst_tpc" + to_string(iC)).data());
       syst_tpc[iS][iC]->Reset();
       stat_all[iS][iC] = (TH1F*)totsyst->Clone(("stat_all" + to_string(iC)).data());
       stat_all[iS][iC]->Reset();
       syst_all[iS][iC] = (TH1F*)totsyst->Clone(("syst_all" + to_string(iC)).data());
       syst_all[iS][iC]->Reset();
+      printf("preparo istogramma tpc\n");
+      syst_tpc_uncorr[iS][iC] = (TH1F*)totsyst->Clone(("syst_tpc_uncorr" + to_string(iC)).data());
+      printf("OK\n");
+      syst_tpc_uncorr[iS][iC]->Reset();
+      printf("preparo istogramma tof\n");
+      syst_tof_uncorr[iS][iC] = (TH1F*)totsyst->Clone(("syst_tof_uncorr" + to_string(iC)).data());
+      printf("OK\n");
+      syst_tof_uncorr[iS][iC]->Reset();
       all[iS][iC] = (TH1F*)totsyst->Clone(("all" + to_string(iC)).data());
       all[iS][iC]->Reset();
       //syst_all[iS][iC] = (TH1F*)totsyst->Clone(("syst_all" + to_string(iC)).data());
       //syst_all[iS][iC]->Reset();
       for(int iSyst=0; iSyst<5; iSyst++){
-        TH1F* partial_syst_tmp = (TH1F*) TOF_systematics_file.Get((to_string(iC) + "/" + kNames[iS] + "/" + syst_names[iSyst]).data());
-        vec_syst_tof[iS][iC][iSyst] = (TH1F*) partial_syst_tmp->Rebin(n_pt_bins,Form("%s_%d_%d",syst_names[iSyst],iS,iC),pt_bin_limits);
+        TH1F* partial_syst_tof_tmp = (TH1F*) TOF_systematics_file.Get((to_string(iC) + "/" + kNames[iS] + "/" + syst_names[iSyst]).data());
+        vec_syst_tof[iS][iC][iSyst] = (TH1F*) partial_syst_tof_tmp->Rebin(n_pt_bins,Form("%s_%d_%d",syst_names[iSyst],iS,iC),pt_bin_limits);
         TH1F* partial_syst_tpc_tmp = (TH1F*) TPC_systematics_file.Get((to_string(iC) + "/" + kNames[iS] + "/" + syst_names[iSyst] + "_tpc").data());
         if(iSyst==shiftsyst) vec_syst_tpc[iS][iC][iSyst] = nullptr;
         else{
@@ -167,6 +177,9 @@ void Final() {
       //funcMaker.GetTsallis(AliPID::ParticleMass(AliPID::kDeuteron),.1,1./0.9,1.,Form("func_%d_%d",iS,iC));
       fit_function[iS][iC]->SetLineColor(kBlack);
       for (int iB = 1; iB <= n_pt_bins; ++iB) {
+        printf("*****************************************\n");
+        printf("            iS: %d iC: %d iB %d\n",iS,iC,iB);
+        printf("*****************************************\n");
         if(ptAxis->GetBinCenter(iB)<1.){
           stat_tof[iS][iC]->SetBinContent(iB,0.);
           stat_tof[iS][iC]->SetBinError(iB,0.);
@@ -181,8 +194,17 @@ void Final() {
           syst_all[iS][iC]->SetBinContent(iB,syst_tpc[iS][iC]->GetBinContent(iB));
           syst_all[iS][iC]->SetBinError(iB,syst_tpc[iS][iC]->GetBinError(iB));
           //
+          printf("contenuto ed errore syst_tpc_uncorr\n");
+          syst_tpc_uncorr[iS][iC]->SetBinContent(iB,stat_tpc[iS][iC]->GetBinContent(iB));
+          syst_tpc_uncorr[iS][iC]->SetBinError(iB,TMath::Sqrt(syst_tpc[iS][iC]->GetBinError(iB)*syst_tpc[iS][iC]->GetBinError(iB) -
+            kAbsSyst[iS]*kAbsSyst[iS]*stat_tpc[iS][iC]->GetBinContent(iB)*stat_tpc[iS][iC]->GetBinContent(iB) - min_material_tpc*min_material_tpc*stat_tpc[iS][iC]->GetBinContent(iB)*stat_tpc[iS][iC]->GetBinContent(iB))
+          );
+          printf("Ok\n");
+          //
+          printf("sistematico + statistico tpc\n");
           all[iS][iC]->SetBinContent(iB,stat_tpc[iS][iC]->GetBinContent(iB));
-          all[iS][iC]->SetBinError(iB,TMath::Sqrt(stat_tpc[iS][iC]->GetBinError(iB)*stat_tpc[iS][iC]->GetBinError(iB) +                      syst_tpc[iS][iC]->GetBinError(iB)*syst_tpc[iS][iC]->GetBinError(iB)-kAbsSyst[iS]*kAbsSyst[iS]*stat_tpc[iS][iC]->GetBinContent(iB)*stat_tpc[iS][iC]->GetBinContent(iB)-min_material_tpc*min_material_tpc*stat_tpc[iS][iC]->GetBinContent(iB)*stat_tpc[iS][iC]->GetBinContent(iB)));
+          all[iS][iC]->SetBinError(iB,TMath::Sqrt(stat_tpc[iS][iC]->GetBinError(iB)*stat_tpc[iS][iC]->GetBinError(iB) + syst_tpc_uncorr[iS][iC]->GetBinError(iB)*syst_tpc_uncorr[iS][iC]->GetBinError(iB)));
+          printf("OK\n");
         }
         else{
           stat_tpc[iS][iC]->SetBinContent(iB,0.);
@@ -198,8 +220,17 @@ void Final() {
           syst_all[iS][iC]->SetBinContent(iB,syst_tof[iS][iC]->GetBinContent(iB));
           syst_all[iS][iC]->SetBinError(iB,syst_tof[iS][iC]->GetBinError(iB));
           //
+          printf("contenuto ed errore syst_tof_uncorr\n");
+          syst_tof_uncorr[iS][iC]->SetBinContent(iB,stat_tof[iS][iC]->GetBinContent(iB));
+          syst_tof_uncorr[iS][iC]->SetBinError(iB,TMath::Sqrt(syst_tof[iS][iC]->GetBinError(iB)*syst_tof[iS][iC]->GetBinError(iB) -
+            kAbsSyst[iS]*kAbsSyst[iS]*stat_tof[iS][iC]->GetBinContent(iB)*stat_tof[iS][iC]->GetBinContent(iB) - min_material_tof*min_material_tof*stat_tof[iS][iC]->GetBinContent(iB)*stat_tof[iS][iC]->GetBinContent(iB))
+          );
+          printf("OK\n");
+          //
+          printf("sitematico + statistico tof\n");
           all[iS][iC]->SetBinContent(iB,stat_tof[iS][iC]->GetBinContent(iB));
-          all[iS][iC]->SetBinError(iB,TMath::Sqrt(stat_tof[iS][iC]->GetBinError(iB)*stat_tof[iS][iC]->GetBinError(iB) +            syst_tof[iS][iC]->GetBinError(iB)*syst_tof[iS][iC]->GetBinError(iB)-kAbsSyst[iS]*kAbsSyst[iS]*stat_tof[iS][iC]->GetBinContent(iB)*stat_tof[iS][iC]->GetBinContent(iB)-min_material_tof*min_material_tof*stat_tof[iS][iC]->GetBinContent(iB)*stat_tof[iS][iC]->GetBinContent(iB)));
+          all[iS][iC]->SetBinError(iB,TMath::Sqrt(stat_tof[iS][iC]->GetBinError(iB)*stat_tof[iS][iC]->GetBinError(iB) +  syst_tof_uncorr[iS][iC]->GetBinContent(iB)*syst_tof_uncorr[iS][iC]->GetBinContent(iB)));
+          printf("OK\n");
         }
         if(ptAxis->GetBinCenter(iB)>1. && ptAxis->GetBinCenter(iB)<1.2){ //comparing TPC and TOF where both
           float z = stat_tpc[iS][iC]->GetBinContent(iB) - stat_tof[iS][iC]->GetBinContent(iB);
@@ -233,16 +264,20 @@ void Final() {
       }
       plotting::SetHistStyle(stat_tof[iS][iC],plotting::kSpectraColors[iC]);
       plotting::SetHistStyle(syst_tof[iS][iC],plotting::kSpectraColors[iC]);
+      plotting::SetHistStyle(syst_tof_uncorr[iS][iC],plotting::kSpectraColors[iC]);
       stat_tof[iS][iC]->Scale(1<<(kCentLength-iC-1));
       stat_tof[iS][iC]->Write("stat_tof");
       syst_tof[iS][iC]->Scale(1<<(kCentLength-iC-1));
       syst_tof[iS][iC]->Write("syst_tof");
+      syst_tof_uncorr[iS][iC]->Scale(1<<(kCentLength-iC-1));
       plotting::SetHistStyle(stat_tpc[iS][iC],plotting::kSpectraColors[iC],25);
       plotting::SetHistStyle(syst_tpc[iS][iC],plotting::kSpectraColors[iC],25);
+      plotting::SetHistStyle(syst_tpc_uncorr[iS][iC],plotting::kSpectraColors[iC],25);
       stat_tpc[iS][iC]->Scale(1<<(kCentLength-iC-1));
       stat_tpc[iS][iC]->Write("stat_tpc");
       syst_tpc[iS][iC]->Scale(1<<(kCentLength-iC-1));
       syst_tpc[iS][iC]->Write("syst_tpc");
+      syst_tpc_uncorr[iS][iC]->Scale(1<<(kCentLength-iC-1));
       all[iS][iC]->Scale(1<<(kCentLength-iC-1));
       all[iS][iC]->Fit(Form("Levi-Tsallis_%d_%d",iS,iC),"IQ");
       plotting::SetHistStyle(stat_all[iS][iC],plotting::kSpectraColors[iC],25);
@@ -356,7 +391,9 @@ void Final() {
   for (int iC = 0; iC < n_centralities -1; ++iC) {
     r_dir->mkdir(to_string(iC).data())->cd();
     stat_tof[1][iC]->Divide(stat_tof[0][iC]);
-    syst_tof[1][iC]->Divide(syst_tof[0][iC]);
+    printf("divisione sistematico scorrelato tof\n");
+    syst_tof_uncorr[1][iC]->Divide(syst_tof_uncorr[0][iC]);
+    printf("OK\n");
     all[1][iC]->Divide(all[0][iC]);
     funcpol[iC] = new TF1(Form("ratiopol_%d",iC),"pol0",0.6,kCentPtLimits[iC]);
     int nx = iC/3;
@@ -367,30 +404,42 @@ void Final() {
       if(stat_tof[1][iC]->GetBinCenter(iB)<1.){
         stat_tof[1][iC]->SetBinContent(iB, 0.);
         stat_tof[1][iC]->SetBinError(iB, 0.);
-        syst_tof[1][iC]->SetBinContent(iB, 0.);
-        syst_tof[1][iC]->SetBinError(iB, 0.);
+        printf("mettere a zer nel tpc\n");
+        syst_tof_uncorr[1][iC]->SetBinContent(iB, 0.);
+        syst_tof_uncorr[1][iC]->SetBinError(iB, 0.);
+        printf("OK\n");
       }
       else{
         if(TMath::Abs(stat_tof[1][iC]->GetBinContent(iB)) < 1e-8) break;
-        x_pull.setVal( (stat_tof[1][iC]->GetBinContent(iB) - 1) / stat_tof[1][iC]->GetBinError(iB));// TMath::Sqrt(stat_tof[1][iC]->GetBinError(iB)*stat_tof[1][iC]->GetBinError(iB) + syst_tof[1][iC]->GetBinError(iB)*syst_tof[1][iC]->GetBinError(iB)) );
+        printf("calcolo il pull\n");
+        x_pull.setVal( (stat_tof[1][iC]->GetBinContent(iB) - 1) / all[1][iC]->GetBinError(iB));
+        printf("OK\n");
         ratio_pull[iC]->add(RooArgSet(x_pull));
       }
     }
     stat_tof[1][iC]->Write("stat_tof");
-    syst_tof[1][iC]->Write("syst_tof");
+    printf("scrivere sistematico scorrelato tpc\n");
+    syst_tof_uncorr[1][iC]->Write("syst_tof_uncorr");
+    printf("OK\n");
 
     stat_tpc[1][iC]->Divide(stat_tpc[0][iC]);
-    syst_tpc[1][iC]->Divide(syst_tpc[0][iC]);
+    printf("Dividere sistematico scorrelato tpc\n");
+    syst_tpc_uncorr[1][iC]->Divide(syst_tpc_uncorr[0][iC]);
+    printf("OK\n");
     for(int iB=1; iB<=n_pt_bins; iB++){
       if(stat_tpc[1][iC]->GetBinCenter(iB)>1.2){
         stat_tpc[1][iC]->SetBinContent(iB, 0.);
         stat_tpc[1][iC]->SetBinError(iB, 0.);
-        syst_tpc[1][iC]->SetBinContent(iB, 0.);
-        syst_tpc[1][iC]->SetBinError(iB, 0.);
+        printf("mettere a zero nel tof\n");
+        syst_tpc_uncorr[1][iC]->SetBinContent(iB, 0.);
+        syst_tpc_uncorr[1][iC]->SetBinError(iB, 0.);
+        printf("Ok\n");
       }
       else{
-        x_pull.setVal( (stat_tpc[1][iC]->GetBinContent(iB) - 1) / TMath::Sqrt(stat_tpc[1][iC]->GetBinError(iB)*stat_tpc[1][iC]->GetBinError(iB) + syst_tpc[1][iC]->GetBinError(iB)*syst_tpc[1][iC]->GetBinError(iB)) );
+        printf("fare il pull\n");
+        x_pull.setVal( (stat_tpc[1][iC]->GetBinContent(iB) - 1) / all[1][iC]->GetBinContent(iB));
         ratio_pull[iC]->add(RooArgSet(x_pull));
+        printf("ok\n");
       }
     }
 
@@ -430,22 +479,22 @@ void Final() {
     ";#it{p}_{T} (GeV/#it{c});#bar{d}/d"
     );
     stat_tof[1][iC]->Draw("esamex0");
-    syst_tof[1][iC]->Draw("e2same");
+    syst_tof_uncorr[1][iC]->Draw("e2same");
     stat_tpc[1][iC]->Draw("esamex0");
-    syst_tpc[1][iC]->Draw("e2same");
+    syst_tpc_uncorr[1][iC]->Draw("e2same");
     //all[1][iC]->Draw("esamex0");
-    funcpol[iC]->Draw("same");
+    //funcpol[iC]->Draw("same");
     TLine *line_one = new TLine(0.35,1.,XaxisEdge,1.);
     line_one->SetLineColor(kBlack);
     line_one->SetLineStyle(2);
     line_one->Draw();
     TLegend* ratio_leg_one = new TLegend(0.719499,0.128318,0.920602,0.337758);
     ratio_leg_one->SetHeader(Form("%4.0f - %2.0f %%",kCentLabels[iC][0],kCentLabels[iC][1]));
-    ratio_leg_one->SetBorderSize(0);
-    ratio_leg_one->AddEntry(syst_tof[0][iC],"TPC + TOF","p");
-    ratio_leg_one->AddEntry(syst_tpc[0][iC],"TPC","p");
-    ratio_leg_one->AddEntry((TObject*)0, Form("p0: %.2f #pm %.2f", funcpol[iC]->GetParameter(0),funcpol[iC]->GetParError(0)), "");
-    ratio_leg_one->AddEntry((TObject*)0, Form("#chi^{2}/NDF: %.2f / %d",funcpol[iC]->GetChisquare(),funcpol[iC]->GetNDF()),"");
+    //ratio_leg_one->SetBorderSize(0);
+    //ratio_leg_one->AddEntry(syst_tof_uncorr[0][iC],"TPC + TOF","p");
+    //ratio_leg_one->AddEntry(syst_tpc_uncorr[0][iC],"TPC","p");
+    //ratio_leg_one->AddEntry((TObject*)0, Form("p0: %.2f #pm %.2f", funcpol[iC]->GetParameter(0),funcpol[iC]->GetParError(0)), "");
+    //ratio_leg_one->AddEntry((TObject*)0, Form("#chi^{2}/NDF: %.2f / %d",funcpol[iC]->GetChisquare(),funcpol[iC]->GetNDF()),"");
     ratio_leg_one->Draw();
     // ratio->Update();
 

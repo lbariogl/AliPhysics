@@ -18,14 +18,15 @@ static TF1 *fBGBlastWave_Integrand = NULL;
 static TF1 *fBGBlastWave_Integrand_num = NULL;
 static TF1 *fBGBlastWave_Integrand_den = NULL;
 
-constexpr double kParticleMass = 1.87561;
+const int kKnownMult = 6;
+constexpr double kParticleMass = 0.936;
 constexpr int kNfitFunctions = 4;
 const string kFitFunctionNames[kNfitFunctions] = {"BlastWave", "Boltzmann", "LevyTsallis", "Mt-exp"};
 
 //Levi-Tsallis parameters
-const Float_t normal=2e-4, normMin=1e-5, normMax=1.;
-const Float_t n=7, nMin=2, nMax=100;
-const Float_t C=0.2, CMin=0.01, CMax=0.6;
+const Float_t normal=2e-4, normMin=1e-5, normMax=2.;
+const Float_t n=15, nMin=2, nMax=100;
+const Float_t C=0.2, CMin=0.01, CMax=0.8;
 
 double BGBlastWave_Integrand(const double *x, const double *p) {
 
@@ -94,13 +95,13 @@ void Denormalize(TH1 * h) {
   }
 }
 
-void BWFits(bool antimatter_analysys = false) {
+void BWFitsProton(bool antimatter_analysys = false) {
   const char* kind_of_particle = (antimatter_analysys) ? "anti" : "";
   gStyle->SetOptFit(1);
   gStyle->SetOptStat(0);
   gStyle->SetTitleXOffset(1.3);
   gStyle->SetTitleYOffset(1.6);
-  TFile *mineF = TFile::Open(kFinalOutput.data());
+  TFile *mineF = TFile::Open(Form("%s/FancyProton.root",kBaseOutputDir.data()));
   TCanvas *mResults[kCentLength];
   TCanvas *mCanvM[kCentLength],*mCanvA[kCentLength];
   TH1D * mysystM[kCentLength], *mysystA[kCentLength],*speM[kCentLength],*speA[kCentLength];
@@ -115,14 +116,14 @@ void BWFits(bool antimatter_analysys = false) {
     pwgfunc.GetMTExp(kParticleMass, 0.1, 1, kFitFunctionNames[3].data())
   };
 
-  TFile bwfile(Form("%sfits.root",kind_of_particle),"recreate");
+  TFile bwfile(Form("%sprotonfits.root",kind_of_particle),"recreate");
   TDirectory* datadir = bwfile.mkdir("data");
   TDirectory* function_dir[4]{nullptr};
   for (int iF = 0; iF < kNfitFunctions; ++iF)
     function_dir[iF] = bwfile.mkdir(kFitFunctionNames[iF].data());
-  for (int i = 0; i < kCentLength; ++i) {
-    speM[i] = (TH1D*)mineF->Get(Form("%sdeuterons/%i/stat_all",kind_of_particle,i));
-    mysystM[i] = (TH1D*)mineF->Get(Form("%sdeuterons/%i/syst_all",kind_of_particle,i));
+  for (int i = 0; i < kKnownMult; ++i) {
+    speM[i] = (TH1D*)mineF->Get(Form("hProton_stat_%d",i));
+    mysystM[i] = (TH1D*)mineF->Get(Form("hProton_syst_%d",i));
     if (!mysystM[i]) cout << "Missing " << Form("syst%i",i) << endl;
     if (!speM[i]) cout << "Missing " << Form("syst%i",i) << endl;
     if (!speM[i] || !mysystM[i]) return;

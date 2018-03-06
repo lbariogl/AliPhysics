@@ -21,7 +21,7 @@ constexpr double kdNdEta[kKnownMult]    = {25.75, 19.83, 16.12, 12.78, 10.11, 8.
 constexpr double kdNdEtaErr[kKnownMult] = { 0.40,  0.30,  0.24,  0.14,  0.15, 0.12};
 constexpr int kNfitFunctions = 4;
 const string kFitFunctionNames[kNfitFunctions] = {"BlastWave", "Boltzmann", "LevyTsallis", "Mt-exp"};
-const string kCentralities[kCentLength] = {"0-1%","1-5%","5-10%","10-20%","20-30%","30-40%","40-60%","60-80%", "80-100%", "0-100%"};
+//const string kCentLabels[kCentLength] = {"0-1%","1-5%","5-10%","10-20%","20-30%","30-40%","40-60%","60-80%", "80-100%", "0-100%"};
 
 template<typename F> F Max(vector<F> &v) {
   double max = -1.e24;
@@ -39,7 +39,7 @@ template<typename F> F Min(vector<F> &v) {
   return min;
 }
 
-void YieldsPlot() {
+void YieldsPlotProton() {
   // /// Compute dNdEta in the bins used by the analysis
   // std::cout << "*** dN/deta in the centrality bins used" << std::endl;
   // double dNdEta[kCentLength]{0.};
@@ -63,9 +63,9 @@ void YieldsPlot() {
   double nucleus_yield[kCentLength]{0.};
   double nucleus_yield_stat[kCentLength]{0.};
   double nucleus_yield_syst[kCentLength]{0.};
-  for(int iS=0; iS<2; iS++){
-    const char* filename = (iS==0) ? "fits.root" : "antifits.root";
-    const char*  particlename = (iS==0) ? "Deuterons" : "Antideuterons";
+  for(int iS=0; iS<1; iS++){
+    const char* filename = (iS==0) ? "protonfits.root" : "antifits.root";
+    const char*  particlename = (iS==0) ? "Protons" : "Antiprotons";
     TFile nucleus(filename);
     printf("\n\n***************************************************************\n");
     printf("\t\t\t%s\n",particlename);
@@ -108,7 +108,7 @@ void YieldsPlot() {
     TGraphErrors mean_pt_gr_syst(kKnownMult,kdNdEta,nucleus_mean_pt,kdNdEtaErr,nucleus_mean_pt_syst);
     mean_pt_gr_syst.SetTitle(Form("%s ",particlename));
     mean_pt_gr_syst.GetYaxis()->SetTitle("#LT #it{p}_{T} #GT (GeV/c)");
-    mean_pt_gr_syst.GetXaxis()->SetTitle("#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{#eta}|<0.5}");
+    mean_pt_gr_syst.GetXaxis()->SetTitle("#frac{d#it{N}}{d#eta}");
     //mean_pt_gr_stat.SetLineColor(kBlue);
     mean_pt_gr_stat.SetMarkerColor(kBlue);
     mean_pt_gr_stat.SetMarkerStyle(20);
@@ -126,17 +126,17 @@ void YieldsPlot() {
     mean_pt_file.Close();
   }
 
-  /// Proton Yield
-  std::cout << "*** Proton yields in the centrality bins used" << std::endl;
+  // /// Proton Yield
+  // std::cout << "*** Proton yields in the centrality bins used" << std::endl;
   // TFile proton(Form("%sFancyProton.root",kBaseOutputDir.data()));
   // TH1F* proton_yield_hist_stat = (TH1F*)proton.Get();
   // TH1F* proton_yield_hist_syst = (TH1F*)proton.Get("hStdYieldSysSummedProton");
   // Requires(proton_yield_hist_stat,"hStdYieldSummedProton");
   // Requires(proton_yield_hist_syst,"hStdYieldSysSummedProton");
-  double proton_yields[kKnownMult] = {1.38,1.070,0.880,0.710,0.669,0.560};
-  double proton_yields_stat[kKnownMult] = {0.03,0.001,0.001,0.007,0.001,0.001};
-  double proton_yields_syst[kKnownMult] = {0.11,0.088,0.075,0.065,0.058,0.050};
-  for (int iC = 0; iC < kKnownMult; ++iC) {
+  // double proton_yields[kCentLength]{0.};
+  // double proton_yields_stat[kCentLength]{0.};
+  // double proton_yields_syst[kCentLength]{0.};
+  // for (int iC = 0; iC < kCentLength; ++iC) {
   //   const int n = kCentBins[iC][1] - kCentBins[iC][0] + 1;
   //   for (int iI0 = kCentBins[iC][0]; iI0 <= kCentBins[iC][1]; ++iI0) {
   //     proton_yields[iC] += proton_yield_hist_stat->GetBinContent(iI0);
@@ -146,36 +146,34 @@ void YieldsPlot() {
   //   proton_yields[iC] /= n;
   //   proton_yields_stat[iC] = std::sqrt(proton_yields_stat[iC]) / n;
   //   proton_yields_syst[iC] = std::sqrt(proton_yields_syst[iC]) / n;
-    std::cout << kCentralities[iC] << " " << proton_yields[iC] << " +/- " << proton_yields_stat[iC] << " +/- " << proton_yields_syst[iC] <<  std::endl;
-  }
-
-  /// Ratio Nucleus / p 2015
-  vector<double> ratio(kCentLength,0.);
-  vector<double> ratio_stat(kCentLength,0.);
-  vector<double> ratio_syst(kCentLength,0.);
-  for (int iC = 0; iC < kKnownMult; ++iC) {
-    ratio[iC] = 2 * nucleus_yield[iC] / proton_yields[iC];
-    ratio_stat[iC] = ratio[iC] * std::sqrt(Sq(nucleus_yield_stat[iC] / nucleus_yield[iC]) + Sq(proton_yields_stat[iC] / proton_yields[iC]));
-    ratio_syst[iC] = ratio[iC] * std::sqrt(Sq(nucleus_yield_syst[iC] / nucleus_yield[iC]) + Sq(proton_yields_syst[iC] / proton_yields[iC]));
-    std::cout << kCentralities[iC] << " " << ratio[iC] << " +/- " << ratio_stat[iC] << " +/- " << ratio_syst[iC] <<  std::endl;
-  }
-
-  TCanvas* ratio_cv = new TCanvas("ratio_cv");
-  ratio_cv->DrawFrame(0.,0.,2000.,1.5 * Max(ratio),";#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{#eta}|<0.5};2 d / (p + #bar{p})");
-  ratio_cv->SetLogx();
-  TGraphErrors* ratio_gr_stat = new TGraphErrors(kKnownMult,kdNdEta,ratio.data(),0,ratio_stat.data());
-  TGraphErrors* ratio_gr_syst = new TGraphErrors(kKnownMult,kdNdEta,ratio.data(),kdNdEtaErr,ratio_syst.data());
-  ratio_gr_syst->SetFillStyle(0);
-  ratio_gr_syst->SetMarkerStyle(20);
-  ratio_gr_stat->SetMarkerStyle(20);
-  ratio_gr_syst->SetMarkerColor(kOrange-3);
-  ratio_gr_stat->SetMarkerColor(kOrange-3);
-  ratio_gr_syst->SetLineColor(kOrange-3);
-  ratio_gr_stat->SetLineColor(kOrange-3);
-  ratio_gr_stat->Draw("pz");
-  ratio_gr_syst->Draw("p2");
-  ratio_cv->SaveAs("miodoverp.C");
+  //   std::cout << kCentLabels[iC] << " " << proton_yields[iC] << " +/- " << proton_yields_stat[iC] << " +/- " << proton_yields_syst[iC] <<  std::endl;
+  // }
 }
+//
+//   /// Ratio Nucleus / p 2015
+//   vector<double> ratio(kCentLength,0.);
+//   vector<double> ratio_stat(kCentLength,0.);
+//   vector<double> ratio_syst(kCentLength,0.);
+//   for (int iC = 0; iC < kCentLength; ++iC) {
+//     ratio[iC] = 2 * nucleus_yield[iC] / proton_yields[iC];
+//     ratio_stat[iC] = ratio[iC] * std::sqrt(Sq(nucleus_yield_stat[iC] / nucleus_yield[iC]) + Sq(proton_yields_stat[iC] / proton_yields[iC]));
+//     ratio_syst[iC] = ratio[iC] * std::sqrt(Sq(nucleus_yield_syst[iC] / nucleus_yield[iC]) + Sq(proton_yields_syst[iC] / proton_yields[iC]));
+//     std::cout << kCentLabels[iC] << " " << ratio[iC] << " +/- " << ratio_stat[iC] << " +/- " << ratio_syst[iC] <<  std::endl;
+//   }
+//
+//   TCanvas* ratio_cv = new TCanvas("ratio_cv");
+//   ratio_cv->DrawFrame(0.,0.,2000.,1.5 * Max(ratio),";#LTd#it{N}_{ch}/d#it{#eta}#GT_{|#it{#eta}|<0.5};2 ^{3}He / (p + #bar{p})");
+//   TGraphErrors* ratio_gr_stat = new TGraphErrors(kCentLength,dNdEta,ratio.data(),0,ratio_stat.data());
+//   TGraphErrors* ratio_gr_syst = new TGraphErrors(kCentLength,dNdEta,ratio.data(),dNdEtaErr,ratio_syst.data());
+//   ratio_gr_syst->SetFillStyle(0);
+//   ratio_gr_syst->SetMarkerStyle(20);
+//   ratio_gr_stat->SetMarkerStyle(20);
+//   ratio_gr_syst->SetMarkerColor(kBlack);
+//   ratio_gr_stat->SetMarkerColor(kBlack);
+//   ratio_gr_syst->SetLineColor(kBlack);
+//   ratio_gr_stat->SetLineColor(kBlack);
+//   ratio_gr_stat->Draw("pz");
+//   ratio_gr_syst->Draw("p2");
 //
 //   /// old results
 //   double old_x[] = { 1206.7, 266.0 };
