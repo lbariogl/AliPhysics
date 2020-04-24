@@ -325,7 +325,8 @@ template<class track_t> void AliAnalysisTaskNucleiYield::TrackLoop(track_t* trac
   if (!acceptedTrack) return;
 
   if (fSaveTrees && track->Pt() < 10.) {
-    printf("ORIGINAL\nRflag: %d\nSflag: %d\nRcentrality: %d\nScentrality: %d\n"fRecNucleus.flag,fSimNucleus.flag,fRecNucleus.centrality,fSimNucleus.centrality);
+    printf("********************************************************+\n");
+    printf("\nORIGINAL\n\nRflag: %d\nSflag: %d\nRcentrality: %d\nScentrality: %d\n",fRecNucleus.flag,fSimNucleus.flag,fRecNucleus.centrality,fSimNucleus.centrality);
     //double mcPt = 0;
     bool good2save{true};
     if (fIsMC) {
@@ -334,7 +335,7 @@ template<class track_t> void AliAnalysisTaskNucleiYield::TrackLoop(track_t* trac
       if (part) {
         good2save = std::abs(part->PdgCode()) == fPDG;
         SetSLightNucleus(part, fSimNucleus);
-        printf("SIM\nprimary: %d\nweak: %d\ntmaterial: %d\nflag: %d\n R centrality: %d\n", (fSimNucleus.flag == SLightNucleus::kPrimary), (fSimNucleus.flag == SLightNucleus::kSecondaryWeakDecay), (fSimNucleus.flag == SLightNucleus::kSecondaryMaterial), fSimNucleus.flag, fSimNucleus.centrality);
+        printf("\nSIM\nprimary: %d\nweak: %d\nmaterial: %d\nflag: %d\nScentrality: %d\n", (fSimNucleus.flag == SLightNucleus::kPrimary), (fSimNucleus.flag == SLightNucleus::kSecondaryWeakDecay), (fSimNucleus.flag == SLightNucleus::kSecondaryMaterial), fSimNucleus.flag, fSimNucleus.centrality);
       } else
         good2save = false;
     }
@@ -357,8 +358,8 @@ template<class track_t> void AliAnalysisTaskNucleiYield::TrackLoop(track_t* trac
       }
       if (std::abs(fRecNucleus.tpcNsigma) < 6.4)
         fRTree->Fill();
+      printf("\nREC\nt0_fill: %d\ntprimary: %d\nweak: %d\ntmaterial: %d\nflag: %d\nRcentrality: %d\n", (fSimNucleus.flag == SLightNucleus::kPrimary), (fSimNucleus.flag == SLightNucleus::kSecondaryWeakDecay), (fSimNucleus.flag == SLightNucleus::kSecondaryMaterial), fRecNucleus.flag, fRecNucleus.centrality);
     }
-    printf("REC\nt0_fill: %d\ntprimary: %d\nweak: %d\ntmaterial: %d\nflag: %d\n R centrality: %d\n", (fSimNucleus.flag == SLightNucleus::kPrimary), (fSimNucleus.flag == SLightNucleus::kSecondaryWeakDecay), (fSimNucleus.flag == SLightNucleus::kSecondaryMaterial), fRecNucleus.flag, fRecNucleus.centrality);
   }
  
   bool positive = track->Charge() > 0;
